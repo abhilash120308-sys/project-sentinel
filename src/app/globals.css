@@ -35,7 +35,7 @@ body {
 ::-webkit-scrollbar-track {
   background: rgba(226, 232, 240, 0.6);
 }
-*/
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
@@ -50,8 +50,5 @@ body {
   body {
     background: white !important;
     color: black !important;
-  }
-  .print\:hidden {
-    display: none !important;
   }
 }
