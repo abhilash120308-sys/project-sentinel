@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Sentinel – MoSPI Integrated Project Monitoring Platform (SIH26103)</title>
+  <meta name="description" content="Centralized Web-Based Integrated Project Monitoring Platform for Ministry of Statistics & Programme Implementation (MoSPI). Real-time milestone tracking, AI predictive delay forecasting, financial governance, GIS mapping, and audit trail.">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            heading: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            gov: {
+              navy: '#1e3a8a',
+              dark: '#0f172a',
+              card: '#ffffff',
+              saffron: '#FF9933',
+              green: '#138808',
+              white: '#FFFFFF',
+              blue: '#0284c7',
+              cyan: '#06b6d4',
+              gold: '#d97706',
+            },
+            pastel: {
+              blue: '#eff6ff',
+              blueBorder: '#bfdbfe',
+              blueText: '#1d4ed8',
+              green: '#ecfdf5',
+              greenBorder: '#a7f3d0',
+              greenText: '#047857',
+              amber: '#fffbeb',
+              amberBorder: '#fde68a',
+              amberText: '#b45309',
+              rose: '#fff1f2',
+              roseBorder: '#fecdd3',
+              roseText: '#be123c',
+              purple: '#faf5ff',
+              purpleBorder: '#e9d5ff',
+              purpleText: '#7e22ce',
+              slate: '#f8fafc',
+              slateBorder: '#e2e8f0',
+            }
+          },
+          boxShadow: {
+            'soft-card': '0 2px 12px -2px rgba(15, 23, 42, 0.06), 0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+            'soft-lg': '0 10px 25px -4px rgba(15, 23, 42, 0.08), 0 4px 10px -2px rgba(15, 23, 42, 0.03)',
+            'pastel-blue': '0 4px 20px -2px rgba(59, 130, 246, 0.15)',
+            'pastel-amber': '0 4px 20px -2px rgba(245, 158, 11, 0.15)',
+            'pastel-emerald': '0 4px 20px -2px rgba(16, 185, 129, 0.15)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18, ReactDOM & Babel for in-browser high performance JSX compilation -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js for high-fidelity interactive data visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      background-color: #f8fafd;
+      color: #0f172a;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .font-heading {
+      font-family: 'Outfit', sans-serif;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(226, 232, 240, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.5);
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.7);
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.7; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.05); }
+    }
+    .animate-glow {
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+    @media print {
+      body {
+        background-color: white !important;
+        color: black !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#f8fafd] text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900">
+  <div id="root"></div>
+
+  <!-- Main React Application Script -->
+  <script type="text/babel" src="/app.js"></script>
+</body>
+</html>

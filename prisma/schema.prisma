@@ -1,0 +1,441 @@
+00000000000000000000000000000000000000000000// Prisma Schema for Project Sentinel (MoSPI Integrated Project Monitoring Platform)
+// Database: PostgreSQL with Foreign Keys, Enums, Indexes, and Constraints
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  PROJECT_ADMIN
+  PROJECT_MANAGER
+  DEPT_OFFICER
+  FIELD_OFFICER
+  VIEWER
+}
+
+enum ProjectStatus {
+  PLANNING
+  NOT_STARTED
+  IN_PROGRESS
+  AT_RISK
+  DELAYED
+  COMPLETED
+  ON_HOLD
+}
+
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum MilestoneStatus {
+  ON_TRACK
+  AT_RISK
+  DELAYED
+  COMPLETED
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  ESCALATED
+}
+
+enum IssueCategory {
+  FINANCIAL
+  APPROVAL
+  TECHNICAL
+  RESOURCE
+  LAND_ACQUISITION
+  ENVIRONMENTAL
+  LEGAL
+  OTHER
+}
+
+enum AlertSeverity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+enum AlertType {
+  OVERDUE_MILESTONE
+  DEADLINE_UPCOMING
+  BUDGET_EXCEEDED
+  LOW_PROGRESS
+  CRITICAL_RISK
+  UNRESOLVED_ISSUE
+  PROJECT_INACTIVITY
+  SYSTEM
+}
+
+enum DocumentCategory {
+  REPORT
+  PROGRESS_REPORT
+  APPROVAL
+  BILL
+  PHOTO
+  CERTIFICATE
+  DPR
+  SANCTION_ORDER
+}
+
+model Department {
+  id                    String    @id @default(uuid())
+  code                  String    @unique
+  name                  String
+  ministry              String
+  nodalOfficer          String
+  officerEmail          String
+  totalSanctionedBudget Float     @default(0.0) // in INR Crores
+  totalUtilizedBudget   Float     @default(0.0) // in INR Crores
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  users                 User[]
+  projects              Project[]
+
+  @@index([code])
+}
+
+model User {
+  id             String      @id @default(uuid())
+  name           String
+  email          String      @unique
+  passwordHash   String
+  role           Role        @default(VIEWER)
+  designation    String
+  phone          String?
+  state          String?
+  avatarUrl      String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  managedProjects Project[]  @relation("ProjectManager")
+  assignedMilestones Milestone[]
+  assignedTasks   Task[]
+  assignedIssues  Issue[]
+  progressUpdates ProgressUpdate[]
+  uploadedDocs    ProjectDocument[]
+  auditLogs       AuditLog[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Project {
+  id               String        @id @default(uuid())
+  code             String        @unique // e.g. MOSPI-PRJ-2026-001
+  name             String
+  description      String        @db.Text
+  objectives       String        @db.Text
+  ministry         String
+  priority         Priority      @default(HIGH)
+  status           ProjectStatus @default(PLANNING)
+  
+  startDate        DateTime
+  targetEndDate    DateTime
+  revisedEndDate   DateTime?
+  actualEndDate    DateTime?
+
+  // Financial figures in ₹ Crores
+  sanctionedBudget Float         @default(0.0)
+  releasedBudget   Float         @default(0.0)
+  utilizedBudget   Float         @default(0.0)
+
+  // Location Geocoding
+  state            String
+  district         String
+  address          String
+  latitude         Float
+  longitude        Float
+
+  // Progress metrics (0-100)
+  plannedProgress  Float         @default(0.0)
+  physicalProgress Float         @default(0.0)
+  financialProgress Float        @default(0.0)
+
+  tags             String[]
+
+  departmentId     String
+  department       Department    @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  managerId        String
+  manager          User          @relation("ProjectManager", fields: [managerId], references: [id])
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  milestones       Milestone[]
+  tasks            Task[]
+  budgets          BudgetRecord[]
+  transactions     Transaction[]
+  issues           Issue[]
+  risks            Risk[]
+  progressUpdates  ProgressUpdate[]
+  documents        ProjectDocument[]
+  alerts           SmartAlert[]
+  aiInsight        AIInsightRecord?
+
+  @@index([code])
+  @@index([status])
+  @@index([departmentId])
+  @@index([state])
+}
+
+model Milestone {
+  id                 String          @id @default(uuid())
+  title              String
+  description        String          @db.Text
+  startDate          DateTime
+  dueDate            DateTime
+  completionDate     DateTime?
+  progressPercentage Int             @default(0)
+  status             MilestoneStatus @default(ON_TRACK)
+  weightage          Float           @default(10.0) // % contribution
+  dependencies       String[]
+
+  projectId          String
+  project            Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assignedOfficerId  String
+  assignedOfficer    User            @relation(fields: [assignedOfficerId], references: [id])
+
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  tasks              Task[]
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model Task {
+  id                 String    @id @default(uuid())
+  title              String
+  dueDate            DateTime
+  status             String    @default("TODO")
+  priority           Priority  @default(MEDIUM)
+  progressPercentage Int       @default(0)
+
+  milestoneId        String
+  milestone          Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+
+  projectId          String
+  project            Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assignedToId       String
+  assignedTo         User      @relation(fields: [assignedToId], references: [id])
+
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  subtasks           Subtask[]
+
+  @@index([milestoneId])
+  @@index([projectId])
+}
+
+model Subtask {
+  id        String   @id @default(uuid())
+  title     String
+  completed Boolean  @default(false)
+  
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model BudgetRecord {
+  id                    String   @id @default(uuid())
+  fiscalYear            String   // e.g. 2026-27
+  sanctionedAmount      Float
+  releasedAmount        Float
+  utilizedAmount        Float
+  spendingAnomalyFlag   Boolean  @default(false)
+
+  projectId             String
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model Transaction {
+  id          String   @id @default(uuid())
+  voucherNo   String   @unique
+  date        DateTime
+  amount      Float    // In INR Crores
+  category    String   // CAPEX, CIVIL_WORKS, PROCUREMENT, etc.
+  description String   @db.Text
+  approvedBy  String
+  vendor      String
+  status      String   @default("PROCESSED")
+
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([projectId])
+  @@index([voucherNo])
+}
+
+model Issue {
+  id                String        @id @default(uuid())
+  title             String
+  description       String        @db.Text
+  category          IssueCategory @default(TECHNICAL)
+  priority          Priority      @default(HIGH)
+  status            IssueStatus   @default(OPEN)
+  deadline          DateTime
+  resolution        String?       @db.Text
+  escalatedTo       String?
+
+  projectId         String
+  project           Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assignedOfficerId String
+  assignedOfficer   User          @relation(fields: [assignedOfficerId], references: [id])
+
+  createdDate       DateTime      @default(now())
+  resolvedDate      DateTime?
+
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+}
+
+model Risk {
+  id             String   @id @default(uuid())
+  title          String
+  category       String
+  probability    String   // HIGH, MEDIUM, LOW
+  impact         String   // CRITICAL, HIGH, MEDIUM, LOW
+  mitigationPlan String   @db.Text
+  status         String   @default("IDENTIFIED")
+  riskScore      Int      @default(50) // 1-100
+
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model ProgressUpdate {
+  id                    String   @id @default(uuid())
+  date                  DateTime @default(now())
+  physicalProgress      Float
+  financialProgress     Float
+  workCompleted         String   @db.Text
+  currentChallenges     String?  @db.Text
+  nextPlannedActivities String?  @db.Text
+  photos                String[]
+  documents             String[]
+  geoLatitude           Float?
+  geoLongitude          Float?
+  geoVerified           Boolean  @default(false)
+
+  projectId             String
+  project               Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  updatedById           String
+  updatedBy             User     @relation(fields: [updatedById], references: [id])
+
+  createdAt             DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model ProjectDocument {
+  id           String           @id @default(uuid())
+  title        String
+  fileName     String
+  fileType     String
+  fileSize     String
+  category     DocumentCategory @default(REPORT)
+  url          String
+  sha256Hash   String?
+
+  projectId    String
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  uploadedById String
+  uploadedBy   User             @relation(fields: [uploadedById], references: [id])
+
+  uploadDate   DateTime         @default(now())
+
+  @@index([projectId])
+  @@index([category])
+}
+
+model SmartAlert {
+  id          String        @id @default(uuid())
+  type        AlertType
+  severity    AlertSeverity @default(INFO)
+  title       String
+  message     String        @db.Text
+  read        Boolean       @default(false)
+  actionUrl   String?
+  timestamp   DateTime      @default(now())
+
+  projectId   String?
+  project     Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([read])
+  @@index([severity])
+}
+
+model AIInsightRecord {
+  id                           String   @id @default(uuid())
+  healthScore                  Int      // 0-100
+  delayProbability             Int      // 0-100%
+  riskLevel                    String   // LOW, MEDIUM, HIGH, CRITICAL
+  budgetRisk                   String   // LOW, MEDIUM, HIGH
+  milestoneRisk                String   // LOW, MEDIUM, HIGH
+  performanceSummary           String   @db.Text
+  rootCauses                   String[]
+  recommendedActions           String[]
+  predictedCompletionDate      DateTime
+  costVariancePredictedPercent Float    @default(0.0)
+  lastAnalysisTimestamp        DateTime @default(now())
+
+  projectId                    String   @unique
+  project                      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  action        String
+  entityType    String   // PROJECT, MILESTONE, BUDGET, ISSUE, RISK, DOCUMENT, USER, AUTH
+  entityId      String
+  projectName   String?
+  previousValue String?  @db.Text
+  newValue      String?  @db.Text
+  ipAddress     String?
+  timestamp     DateTime @default(now())
+
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType])
+  @@index([timestamp])
+  @@index([userId])
+}
